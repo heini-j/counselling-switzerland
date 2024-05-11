@@ -39,8 +39,51 @@ read_html(links_profiles[1]) %>%
 
 ?paste0
 
+library(httr)
 
-#4. loop over the links and scrape the content
+test <- GET(links_profiles[1])
+
+page <- GET(links_profiles[1],
+            add_headers(
+              From = "heini.jaervioe@stud.unilu.ch",
+              `User-Agent` = user_agent)
+)
+
+
+page <- httr::GET(links_profiles[1],
+                        httr::add_headers(
+                          From = "heini.jaervioe@stud.unilu.ch",
+                          `User-Agent` = R.Version()$version.string))
+
+bin <- content(page, as = "raw")
+
+writeBin(object = bin, con ="testpage.html")
+
+titles <- read_html(here::here("testpage.html")) %>%
+  html_elements(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "align-items-start", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "border-color-pumpkin-500", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "body-4", " " ))]//div') %>%
+  html_text( )
+titles
+
+#address
+titles[2]
+
+#availability
+titles[4]
+
+#target groups
+titles[8]
+
+#languages
+titles[9]
+
+#billing
+titles[10]
+
+?html_table
+
+
+
+#html_nodes#4. loop over the links and scrape the content
 
 for(i in 1:length(links_profiles)){
   cat("iteration", i, "\n")
