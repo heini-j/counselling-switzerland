@@ -35,16 +35,17 @@ length(links_profiles)
 
 # reading the first profile on the list to form a basis for a loop
 
-page <- httr::GET(links_profiles[1],
+page <- httr::GET(links_profiles[3],
                         httr::add_headers(
                           From = "heini.jaervioe@stud.unilu.ch",
                           `User-Agent` = R.Version()$version.string))
 
-bin <- content(page, as = "raw")
+bin <- content(page, as = "parsed")
 
 writeBin(object = bin, con ="testpage.html")
 
 #reading the needed information from the first profile in the html file
+
 
 titles <- read_html(here::here("testpage.html")) %>%
   html_elements(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "align-items-start", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "border-color-pumpkin-500", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "body-4", " " ))]//div') %>%
@@ -74,22 +75,75 @@ write.csv(psychologist_df, "psychologist.csv", row.names = FALSE)
 
 #4. loop over the links and scrape the content
 
-for(i in 1:length(links_profiles)){
-  cat("iteration", i, "\n")
-  links_profiles[[i]] <- read_html(links_profiles[u]) %>%
-    html_elements(css=".pe-8px") %>%
-    html_text()
-  Sys.sleep(8)
+links_profiles[1:5]
+
+
+read_html(links_profiles[3]) %>%
+  html_elements(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "align-items-start", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "border-color-pumpkin-500", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "body-4", " " ))]//div') %>%
+  html_text2() %>%
+  strsplit("\n")
+
+print(links_profiles)
+
+#turning links_profiles into a vector to be able to loop over it
+
+#finding out what kind of variable links_profiles is
+
+class(links_profiles)
+
+links_profiles[3]
+
+#turning links_profiles into a character vector
+psychologist_combined <- data.frame(Title = character(), stringsAsFactors = FALSE)
+
+for (i in links_profiles) {
+      pages <- GET(i, add_headers(
+                    From = "heini.jaervioe@stud.unilu.ch",
+                    'User-Agent' = R.Version()$version.string))
+      if (status_code(pages) == 200) {  # Check if the request was successful
+        print("Success!")
+      } else {
+        print("Error!")
+        print(status_code(pages))
+      }
+      if (i == 10) break
+      Sys.sleep(8)
+                   
+                      
+bin <- content(pages, as = "parsed")
+                   
+profiles <- bin %>%
+html_elements(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "align-items-start", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "border-color-pumpkin-500", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "body-4", " " ))]//div') %>%
+html_text2() %>%
+strsplit("\n")
+
+data <- list(
+  address = profiles[[1]][1],
+  adress2 = profiles[[2]][1],
+  placeholder2 = profiles[[2]][2],
+  placeholder3 = profiles[[3]][2],
+  availability = profiles[[4]][2],
+  placeholder5 = profiles[[5]][2],
+  placeholder6 = profiles[[6]][2],
+  placeholder7 = profiles[[7]][2],
+  groups = profiles[[8]][2],
+  languages = profiles[[9]][2],
+  billing = profiles[[10]][2]
+)
+
+
+psychologist_df <- data.frame(data)
+
+psychologist_combined <- rbind.data.frame(psychologist_combined, psychologist_df)
 }
+         
+
+#Found out that the structure is different on each page; sos 
+
+write.csv(psychologist_combined, "psychologist.csv", row.names = FALSE)
 
 
 
-
-
-
-#5. store the content in a list
-
-#6. save the list as a csv file
 
 
 
