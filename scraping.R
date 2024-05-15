@@ -99,13 +99,15 @@ print(links_profiles)
 
 class(links_profiles)
 
-links_profiles[3]
+links_profiles[18]
+
+links_profiles2 <- links_profiles[1490:3738]
 
 #turning links_profiles into a character vector
-psychologist_combined <- data.frame(Title = character(), stringsAsFactors = FALSE)
+psychologist_combined2 <- data.frame(Title = character(), stringsAsFactors = FALSE)
 
 i <- 0
-for (profile_link in links_profiles) {
+for (profile_link in links_profiles2) {
   i <- i + 1
   pages <- GET(
     profile_link,
@@ -118,9 +120,7 @@ for (profile_link in links_profiles) {
     print("Error!")
     print(status_code(pages))
   }
-  if (i == 10)
-    break
-  Sys.sleep(8)
+  Sys.sleep(5)
   
   
   bin <- content(pages, as = "parsed")
@@ -166,8 +166,10 @@ for (profile_link in links_profiles) {
   
   psychologist_df <- data.frame(data)
   
-  psychologist_combined <- rbind.data.frame(psychologist_combined, psychologist_df)
+  psychologist_combined2 <- rbind.data.frame(psychologist_combined2, psychologist_df)
 }
+
+#at profile 1490 code broke
 
 ?content
 
@@ -175,7 +177,7 @@ class(bin)
 
 #Found out that the structure is different on each page; sos
 
-write.csv(psychologist_combined, "psychologist.csv", row.names = FALSE)
+write.csv(psychologist_combined2, "psychologist2.csv", row.names = FALSE)
 
 read_html(bin) %>%
   html_elements(xpath = '//div[.="Availability"]/parent::div') %>%
@@ -187,6 +189,6 @@ profiles <- bin %>%
   html_text2() %>%
   strsplit("\n")
 
-profiles
+links_profiles[1489]
 
-bin
+?xml_find_all
