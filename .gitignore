@@ -1,0 +1,16 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+#Data
+
+psychologist.csv
+psychologist2.csv
+psychogist_combined.csv
+profilelinks.csv
+
+#html files
+
+psyfinder.html
+testpage.html
