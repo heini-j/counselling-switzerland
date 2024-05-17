@@ -4,13 +4,13 @@ library(httr)
 
 #scraping the links from the stored html file
 
-#1. read the html file
+#reading links from the html file of the website scrolled to the end
 
 links <- read_html("psyfinder.html") %>%
   html_elements(css = "a") %>%
   html_attr(name = "href")
 
-#checking where the profile links start and end
+#checking where the psychologists' profile links start and end
 
 links[1:60]
 
@@ -20,63 +20,17 @@ links[3700:3796]
 
 links_profiles <- links[56:3793]
 
-profile_list <- vector(mode = "list", length = length(links_profiles))
-
-#2. extract the links
-
-write.csv(links_profiles, "profilelinks.csv", row.names = FALSE)
-
 #checking that the lenght is the same as the number of psychologist on the website
 
 length(links_profiles)
 
 #It was!
 
+#saving the links to a csv file
+
+write.csv(links_profiles, "profilelinks.csv", row.names = FALSE)
 
 # reading the first profile on the list to form a basis for a loop
-
-page <- httr::GET(
-  links_profiles[3],
-  httr::add_headers(From = "heini.jaervioe@stud.unilu.ch", `User-Agent` = R.Version()$version.string)
-)
-
-bin <- content(page, as = "parsed")
-
-writeBin(object = bin, con = "testpage.html")
-
-#reading the needed information from the first profile in the html file
-
-
-titles <- read_html(here::here("testpage.html")) %>%
-  html_elements(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "align-items-start", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "border-color-pumpkin-500", " " ))] | //*[contains(concat( " ", @class, " " ), concat( " ", "body-4", " " ))]//div') %>%
-  html_text2() %>%
-  strsplit("\n")
-
-#checking where the needed information is located in the list
-titles
-
-#creating a dictionary with the elements we need for the analysis
-
-data <- list(
-  address = titles[[11]][3],
-  availability = titles[[4]][2],
-  groups = titles[[8]][2],
-  languages = titles[[9]][2],
-  billing = titles[[10]][2]
-)
-
-#turning the dictionary into a dataframe
-
-psychologist_df <- as.data.frame(data)
-
-#saving the data frame as a csv file
-
-write.csv(psychologist_df, "psychologist.csv", row.names = FALSE)
-
-#4. loop over the links and scrape the content
-
-links_profiles[1:5]
-
 
 test <- read_html(links_profiles[1]) %>%
   html_elements(xpath = '//h3[.="Address"]/parent::div') %>%
@@ -84,27 +38,15 @@ test <- read_html(links_profiles[1]) %>%
   str_replace("Address\n", "") %>%
   str_replace_all("\n", " ")
 
+test[[1]][1]
+
 # Extract the zipcode of 4 digits from the address string
 zipcode <- str_extract(test, "\\d{4}")
 
-zipcode
-
-test[[1]][1]
-
-print(links_profiles)
-
-#turning links_profiles into a vector to be able to loop over it
-
-#finding out what kind of variable links_profiles is
-
-class(links_profiles)
-
-links_profiles[18]
-
-links_profiles2 <- links_profiles[1490:3738]
-
 #turning links_profiles into a character vector
 psychologist_combined2 <- data.frame(Title = character(), stringsAsFactors = FALSE)
+
+#looping through all the profiles to extract the needed information
 
 i <- 0
 for (profile_link in links_profiles2) {
@@ -153,6 +95,7 @@ for (profile_link in links_profiles2) {
   
   zipcode <- str_extract(addr, "\\d{4}")
 
+#saving the data to a dictionary object with the correct labels
   
   data <- list(
     address = addr[[1]][1],
@@ -163,32 +106,13 @@ for (profile_link in links_profiles2) {
     zipcode = zipcode
   )
   
+#turning the dictionary object into a dataframe
   
   psychologist_df <- data.frame(data)
   
   psychologist_combined2 <- rbind.data.frame(psychologist_combined2, psychologist_df)
 }
 
-#at profile 1490 code broke
-
-?content
-
-class(bin)
-
-#Found out that the structure is different on each page; sos
+#Saving the dataframe as a csv file
 
 write.csv(psychologist_combined2, "psychologist2.csv", row.names = FALSE)
-
-read_html(bin) %>%
-  html_elements(xpath = '//div[.="Availability"]/parent::div') %>%
-  html_text2() %>%
-  strsplit("\n")
-
-class(bin)
-profiles <- bin %>%
-  html_text2() %>%
-  strsplit("\n")
-
-links_profiles[1489]
-
-?xml_find_all
