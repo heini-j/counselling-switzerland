@@ -1,0 +1,207 @@
+---
+title: "Project report"
+author: "Heini Järviö"
+date: "2024-05-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Availability of appropriate healthcare is essential for healthy human life. Psychiatric illnesses are currently one of the leading causes for absence from work, health related suffering and blabla. Fast access to appropriate treatment can prevent cronic illness and further complications. Since 2020, Switzerland has eased access to psychological counselling by including psychologists' interventions in basic insurance. The largest association for psychologists (FSP) in Switzerland provides information to the habitants and lists available services around the country.
+
+## Aim of the project:
+
+In this project I utilise the information on counselling providers around Switzerland as provided by FSP's Psyfinder. The aim of the project is to map councelling providers in different area codes, while using several accessibility filters, such as inclusion in the basic insurance, target group of the service and so on. The aim of the project is to assess how equally available councelling services are in Switzerland.
+
+## Project timeline:
+
+The list of profile links were scraped on X. May. At this time the psyfinder website included the profiles of 3738 psychologists in Switzerland.
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+# Project rundown
+
+# 1. Scraping the data
+
+## 1.1. Initial preparations
+
+The project started by investigation of the website to be scraped (psyfinder.ch). As the website included dynamic elements, i.e. infinite scrolling, it was necessary to first access the page with Selenium powered external browser that was used to scroll to the end of the list.
+
+```{r cars}
+rd <- rsDriver(browser = "firefox",
+               chromever = NULL)
+
+driver <- rd$client
+
+#setting the window size as phone adapted website is easier to manage
+
+driver$setWindowSize(360, 640)
+
+
+#navigating to the website with the selenium driver
+driver$navigate('https://www.psychologie.ch/en/psyfinder-map')
+
+html <- driver$getPageSource()[[1]]
+print(html)
+
+pageEl  <- driver$findElements(using = "css", value = "a")
+
+#clicking open the button to show all the results
+button_element <- driver$findElement(using = "class name", "d-md-none")
+button_element$clickElement()
+
+#scrolling to the bottom of the page to load all the results
+scroll_element <- driver$findElement(using = "class name", "overflow-scroll")
+scroll_element$sendKeysToElement(list(key = "end"))
+
+#creating a loop that does the infine scroll
+
+for(i in 1:50){
+  scroll_element$sendKeysToElement(list(key = "end"))
+  Sys.sleep(8)
+}
+
+```
+
+This result was saved in an HTML file in order to scrape the eventual profile links
+
+```{r}
+html <- driver$getPageSource()[[1]]
+writeLines(html, "psyfinder.html")
+
+## 1.2 Scraping the profile links
+
+To scrape the needed information from the counsellor profiles on the psyfinder-website it was necessary to create a list of profile links 
+
+links <- read_html("psyfinder.html") %>%
+  html_elements(css = "a") %>%
+  html_attr(name = "href")
+
+#checking where the profile links start and end
+
+links[1:60]
+
+links[3700:3796]
+
+#profile links start at 56 and end at 3793
+
+links_profiles <- links[56:3793]
+
+#Saving the links to a csv file
+
+write.csv(links_profiles, "profilelinks.csv", row.names = FALSE)
+```
+
+The list links_profiles includes only the profile links (n = 3738).
+
+To scrape the right information from the profile, an example code was created. 
+
+To extract the information under titles "Address", "Target groups", "Languages", "Availability" and "Billing", it was necessary to find the correct XML node to access this information. This process included several trials where using the parent notation returned the right results. 
+
+The code below provides an example for fetching the address - replacing it with the other keywords returned the corresponding right information.
+
+Additionally, new variable "post code" was formed for the analysis.
+
+```{r}
+
+#reading the needed information from the first profile in the html file
+
+test \<- read_html(links_profiles[1]) %\>% html_elements(xpath = '//h3[.="Address"]/parent::div') %\>% html_text2() %\>% str_replace("Address\n", "") %\>% str_replace_all("\n", " ")
+
+# Extract the zipcode of 4 digits from the address string
+zipcode <- str_extract(test, "\\d{4}")
+
+````
+
+Finally, this information was scraped from all the profiles to form a dataset for later analysis.
+
+```{r}
+#turning links_profiles into a character vector
+psychologist_combined <- data.frame(Title = character(), stringsAsFactors = FALSE)
+
+i <- 0
+for (profile_link in links_profiles) {
+  i <- i + 1
+  pages <- GET(
+    profile_link,
+    add_headers(From = "heini.jaervioe@stud.unilu.ch", 'User-Agent' = R.Version()$version.string)
+  )
+  if (status_code(pages) == 200) {
+    # Check if the request was successful
+    print("Success!")
+  } else {
+    print("Error!")
+    print(status_code(pages))
+  }
+  Sys.sleep(5)
+  
+  
+  bin <- content(pages, as = "parsed")
+  
+  availability <- bin %>%
+    html_elements(xpath = '//div[.="Availability"]/parent::div') %>%
+    html_text2() %>%
+    strsplit("\n")
+  
+  group <- bin %>%
+    html_elements(xpath = '//div[.="Target groups"]/parent::div') %>%
+    html_text2() %>%
+    strsplit("\n")
+  
+  bill <- bin %>%
+    html_elements(xpath = '//div[.="Billing"]/parent::div') %>%
+    html_text2() %>%
+    strsplit("\n")
+  
+  lang <- bin %>%
+    html_elements(xpath = '//div[.="Languages"]/parent::div') %>%
+    html_text2() %>%
+    strsplit("\n")
+  
+  addr <- bin %>%
+    html_elements(xpath = '//h3[.="Address"]/parent::div') %>%
+    html_text2() %>%
+    str_replace("Address\n", "") %>%
+    str_replace_all("\n", " ")
+  
+  zipcode <- str_extract(addr, "\\d{4}")
+
+  
+  data <- list(
+    address = addr[[1]][1],
+    availability = availability[[1]][2],
+    groups = group[[1]][2],
+    languages = lang[[1]][2],
+    billing = bill[[1]][2],
+    zipcode = zipcode
+  )
+  
+  
+  psychologist_df <- data.frame(data)
+  
+  psychologist_combined <- rbind.data.frame(psychologist_combined, psychologist_df)
+}
+
+```
+
+The data was the saved to a csv file for further analysis.
+
+```{r}
+write.csv(psychologist_combined, "psychologist_combined.csv", row.names = FALSE)
+```
+
+
