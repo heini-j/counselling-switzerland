@@ -21,27 +21,18 @@ In this project I utilise the information on counselling providers around Switze
 
 The list of profile links were scraped on X. May. At this time the psyfinder website included the profiles of 3738 psychologists in Switzerland.
 
-```{r cars}
-summary(cars)
-```
+## Project rundown
 
-## Including Plots
+## 1. Scraping the data
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-# Project rundown
-
-# 1. Scraping the data
-
-## 1.1. Initial preparations
+### 1.1. Initial preparations
 
 The project started by investigation of the website to be scraped (psyfinder.ch). As the website included dynamic elements, i.e. infinite scrolling, it was necessary to first access the page with Selenium powered external browser that was used to scroll to the end of the list.
 
 ```{r cars}
+library(RSelenium)
+library(wdman)
+
 rd <- rsDriver(browser = "firefox",
                chromever = NULL)
 
@@ -83,9 +74,15 @@ This result was saved in an HTML file in order to scrape the eventual profile li
 html <- driver$getPageSource()[[1]]
 writeLines(html, "psyfinder.html")
 
-## 1.2 Scraping the profile links
+```
 
-To scrape the needed information from the counsellor profiles on the psyfinder-website it was necessary to create a list of profile links 
+### 1.2 Scraping the profile links
+
+To scrape the needed information from the counsellor profiles on the psyfinder-website it was necessary to create a list of profile links to be used in the scraping process.
+
+```{r}
+library(rvest)
+library(httr)
 
 links <- read_html("psyfinder.html") %>%
   html_elements(css = "a") %>%
@@ -108,9 +105,9 @@ write.csv(links_profiles, "profilelinks.csv", row.names = FALSE)
 
 The list links_profiles includes only the profile links (n = 3738).
 
-To scrape the right information from the profile, an example code was created. 
+To scrape the right information from the profile, an example code was created.
 
-To extract the information under titles "Address", "Target groups", "Languages", "Availability" and "Billing", it was necessary to find the correct XML node to access this information. This process included several trials where using the parent notation returned the right results. 
+To extract the information under titles "Address", "Target groups", "Languages", "Availability" and "Billing", it was necessary to find the correct Xpath node to access this information. This process included several trials where using the parent notation returned the right results.
 
 The code below provides an example for fetching the address - replacing it with the other keywords returned the corresponding right information.
 
@@ -120,12 +117,11 @@ Additionally, new variable "post code" was formed for the analysis.
 
 #reading the needed information from the first profile in the html file
 
-test \<- read_html(links_profiles[1]) %\>% html_elements(xpath = '//h3[.="Address"]/parent::div') %\>% html_text2() %\>% str_replace("Address\n", "") %\>% str_replace_all("\n", " ")
+test <- read_html(links_profiles[1]) %\>% html_elements(xpath = '//h3[.="Address"]/parent::div') %\>% html_text2() %\>% str_replace("Address\n", "") %\>% str_replace_all("\n", " ")
 
 # Extract the zipcode of 4 digits from the address string
 zipcode <- str_extract(test, "\\d{4}")
-
-````
+```
 
 Finally, this information was scraped from all the profiles to form a dataset for later analysis.
 
@@ -204,4 +200,5 @@ The data was the saved to a csv file for further analysis.
 write.csv(psychologist_combined, "psychologist_combined.csv", row.names = FALSE)
 ```
 
+## 2. Data analysis
 
