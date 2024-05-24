@@ -16,7 +16,9 @@ zipcode_list
 
 valid_zipcode <- zipcode_list[grepl("^\\d{4}$", zipcode_list)]
 
-#removing the profiles with invadi zipcodes from the data
+print(valid_zipcode)
+
+#removing the profiles with invadid zipcodes from the data
 
 psychologist_df <- data %>% filter(zipcode %in% valid_zipcode)
 
@@ -39,15 +41,24 @@ zipcode_count$first_digit <- substr(zipcode_count$zipcode, 1, 1)
 zipcode_count <- zipcode_count %>% group_by(first_digit) %>% summarise(count = sum(count)) %>% arrange(desc(count))
 
 zipcode_count
-#zipcodes starting with 1 has most psychologist (1208), then Zurich (946), Bern (418), Luzern (395)
+#zipcodes starting with 1 has most psychologist (1208), then 8/ Zurich (946), 3/ Bern (418), 6/ Luzern (395)
 
 #FInding out how many psychologist have "Covered by basic insurance" in their billing information
 
 psychologist_df$billing <- as.factor(psychologist_df$billing)
 
-psychologist_df %>% group_by(billing) %>% summarise(count = n())
+psychologist_df %>% group_by(billing) %>% summarise(count = n()/3723)
 
-#Turning the result in a table
+#15 % don't have "covered by basic insurance" in their profile -> 85 % are!
+
+#counting the availability of the 3723 psychologist on the list
+
+psychologist_df %>% group_by(availability) %>% summarise(count = n()/3723)
+
+#15,8 % are available in less than 2 weeks, 22,3 % in 2-4 weeks, 32,7 % at least four weeks, 29,2 % don't have any availability
+#for 60 % of the psychologist one has to wait at least 4 weeks
+
+#ggplot2#Turning the result in a table
 
 billing_table <- psychologist_df %>% group_by(billing) %>% summarise(count = n()) %>% knitr::kable()
 
@@ -55,4 +66,22 @@ billing_table
 
 install.packages("maps")
 library(maps)
+
+
+
+
+#creating a dataframe with the number of psychologists in each zipcode
+
+zipcode_count <- data %>% group_by(PLZ) %>% summarise(count = n())
+
+zipcode_count <- 
+
+#merging the zipcode_count dataframe with the mapdata dataframe
+
+mapdata$PLZ <- as.character(mapdata$PLZ)
+
+
+#creating a dataframe with the number of psychologists in each zipcode
+
+zipcode_count <- data %>% group_by(PLZ) %>% summarise(count = n())
 
