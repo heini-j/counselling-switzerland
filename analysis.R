@@ -62,19 +62,9 @@ psychologist_df %>% group_by(availability) %>% summarise(count = n()/3723)
 
 billing_table <- psychologist_df %>% group_by(billing) %>% summarise(count = n()) %>% knitr::kable()
 
-billing_table
-
-install.packages("maps")
-library(maps)
-
-
-
-
 #creating a dataframe with the number of psychologists in each zipcode
 
 zipcode_count <- data %>% group_by(PLZ) %>% summarise(count = n())
-
-zipcode_count <- 
 
 #merging the zipcode_count dataframe with the mapdata dataframe
 

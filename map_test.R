@@ -14,34 +14,42 @@ print(mapdata)
 
 #plotting the map
 
-?tmap_mode
 
 tmap_mode("plot")
 
 #renaming the zipcode column to "PLZ" to match with the names in the shapefile
 
-data$PLZ <- data$zipcode
+psychologist_df$PLZ <- psychologist_df$zipcode
 
 #creating a map that shows the number of psychologists in each zipcode
 
-psyc_count <- data %>% group_by(PLZ) %>% summarise(count = n())
+psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
+
+#taking a log2 of the psyc_count variable to make the differences more visible
+
+psyc_log <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n()) %>% mutate(count = log2(count))
+
 
 #merging the zipcode_count dataframe with the mapdata dataframe
 
 mapdata <- merge(mapdata, psyc_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
+mapdata <- merge(mapdata, psyc_log, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+
+mapdata$log2_count <- log2(mapdata$count)
+
 #creating a map that shows the number of psychologists in each zipcode
 
 tm_shape(mapdata) +
-  tm_polygons(col = "count", 
+  tm_polygons(col = "log2_count", 
               border.col = "grey",
               lwd = 0.1,
               palette = "BuPu", 
               n = 3,
-              style = "log10_pretty",
+              style = "pretty",
               colorNA = "white") +
   tm_layout(main.title = "N of psychologist in each zipcode",
-            scale = 0.8,
+            main.title.size = 0.8,
             bg.color = "grey85",
             legend.outside = TRUE,
             legend.position = c("right", "bottom"))
@@ -49,56 +57,33 @@ tm_shape(mapdata) +
 #next looking at the number of psychologist relative to the population in each zipcode
 #reading an excel file to R
 
-bevol_data <- readxl::read_excel("bevolkerung.xlsx")
+popdata <- read.csv("populationPLZ.csv")
 
 #selecting columns of interest
 
+View(popdata)
 
-print(bevol_data[[1]])
+#creating a variable that counts the number of psychologist relative to the population in each zipcoe
 
-#column 1 includes the zipcodes
-
-print(bevol_data[[2]])
-
-#column 2 includes the population
-
-#renaming column 1 in bevol_data as "PLZ" to match with the names in the shapefile
-
-bevol_data$PLZ <- bevol_data[[1]]
-
-#renaming column 2 in bevol_data as "population"
-
-bevol_data$population <- bevol_data[[2]]
-
-#separating the 2 new columns from the rest of the data
-
-bevol_data <- bevol_data[, c("PLZ", "population")]
-
-#first 3 rows include unnecessary information so removing them
-
-bevol_data <- bevol_data[-c(1:3),]
-
-#creating a new variable that divides population by number of psychologists in each zipcode
+mapdata$pop_psyc <- popdata$N/mapdata$count
 
 
-#creating a dataframe of bevol_data where the zipcodes are in the valid_zipcode list
-
-bevol_data <- bevol_data %>% filter(PLZ %in% valid_zipcode)
-
-#filtering the same zipcodes in the mapdata dataframe
-
-psyc_count <- psyc_count %>% filter(PLZ %in% valid_zipcode)
-
-mapdata$psyc_relative <-  mapdata$count / bevol_data$population
-
-#Error in bevol_data$population/mapdata$count : non-numeric argument to binary operator
-
-#converting the columns to numeric
-
-bevol_data$population <- as.numeric(bevol_data$population)
+tm_shape(mapdata) +
+  tm_polygons(col = "pop_psyc", 
+              border.col = "grey",
+              lwd = 0.1,
+              palette = "BuPu", 
+              n = 3,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Relative number of psychologist in each zipcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
 
 
-
+?as.numeric
 ?tm_layout
 
 ?tm_shape
