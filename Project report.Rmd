@@ -17,9 +17,15 @@ Availability of appropriate healthcare is essential for healthy human life. Psyc
 
 In this project I utilise the information on counselling providers around Switzerland as provided by FSP's Psyfinder. The aim of the project is to map councelling providers in different area codes, while using several accessibility filters, such as inclusion in the basic insurance, target group of the service and so on. The aim of the project is to assess how equally available councelling services are in Switzerland.
 
-## Project timeline:
+## Project source material:
 
-The list of profile links were scraped on X. May. At this time the psyfinder website included the profiles of 3738 psychologists in Switzerland.
+The list of profile links were scraped on 8th of May 2024. At this time the psyfinder website included the profiles of 3738 psychologists in Switzerland.
+
+Shapefiles for the map visualisations were downloaded from Kanton Luzerns Geodata portal: <https://daten.geo.lu.ch/produkt/grzplzxx_ds_v1>
+
+The excel file for population in each postcode area in Switzerland was downloaded from the Swiss Federal Statistical Office: <https://www.bfs.admin.ch/asset/de/26565300>
+
+The data corresponds to population data from 2022, which was deemed as adequate for the scope of this project.
 
 ## Project rundown
 
@@ -260,7 +266,7 @@ psychologist_df$billing <- as.factor(psychologist_df$billing)
 psychologist_df %>% group_by(billing) %>% summarise(count = n()/3723)
 ```
 
-15 % don't have "covered by basic insurance" in their profile, whereas 85 % do. We land on the conclusion that the majority of psychologists in Switzerland are covered by basic insurance. 
+15 % don't have "covered by basic insurance" in their profile, whereas 85 % do. We land on the conclusion that the majority of psychologists in Switzerland are covered by basic insurance.
 
 What about the availabitlity of the psychologists?
 
@@ -287,6 +293,8 @@ availability_pie
 
 ```
 
+![](images/clipboard-3917257867.png)
+
 Lastly, the availability of psychological councelling for different groups was assessed. A sample of target groups was selected as these groups seem like the most common ones.
 
 ```{r}
@@ -307,19 +315,19 @@ keyword_counts_df <- data.frame(keyword = keywords, count = keyword_counts, perc
 # Print the table
 print(keyword_counts_df)
 ```
+
 The following table was created:
 
-Children   Children   979   26.29600
-Teenagers Teenagers  1543   41.44507
-Adults       Adults  3598   96.64249
+```         
+            keyword count percentage 
+Children   Children   979   26.29600 
+Teenagers Teenagers  1543   41.44507 
+Adults       Adults  7856  211.01262 
 Couples     Couples  1327   35.64330
+```
 
 As a conclusion, the majority of psychologists in Switzerland provide services for adults, while the availability of services for children, teenagers and couples is lower.
 
 ### 2.3 Map visualisations
-
-
-
-
 
 ## 3. Conclusions
