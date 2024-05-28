@@ -15,7 +15,7 @@ print(mapdata)
 #plotting the map
 
 
-tmap_mode("view")
+tmap_mode("plot")
 
 #renaming the zipcode column to "PLZ" to match with the names in the shapefile
 
@@ -58,7 +58,7 @@ popdata <- read.csv("populationPLZ.csv")
 
 View(popdata)
 
-#creating a variable that counts the number of psychologist relative to the population in each zipcoe
+#ccreating a map that shows the population in each zipcode to visually compare with the number of psychologists
 
 mapdata <- merge(mapdata, popdata, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
@@ -76,19 +76,19 @@ tm_shape(mapdata) +
             legend.outside = TRUE,
             legend.position = c("right", "bottom"))
 
+#creating a map that shows the relative number of psychologist per population in each zipcode
 
-mapdata$pop_psyc <- popdata$N/mapdata$count
-
+mapdata$pop_psyc <- mapdata$N/mapdata$count
 
 tm_shape(mapdata) +
   tm_polygons(col = "pop_psyc", 
               border.col = "grey",
               lwd = 0.1,
               palette = "BuPu", 
-              n = 3,
+              n = 6,
               style = "pretty",
               colorNA = "white") +
-  tm_layout(main.title = "Relative number of psychologist in each zipcode",
+  tm_layout(main.title = "Population / psychologist in each postcode",
             main.title.size = 0.8,
             bg.color = "grey85",
             legend.outside = TRUE,
@@ -104,21 +104,12 @@ tm_shape(mapdata) +
 
 tmaptools::palette_explorer()
 
-#creating a map that shows the variation in the "availability" variable in each zipcode
+#checking which values the availablity variable in psychologist_df takes
 
-availability_count <- data %>% group_by(PLZ, availability) %>% summarise(count = n())
-
-#merging the availability_count dataframe with the mapdata dataframe
-
-mapdata <- merge(mapdata, availability_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+unique(psychologist_df$availability)
 
 
 
-#reading an excel file to R
-
-bevol_data <- readxl::read_excel("bevolkerung.xlsx")
-
-View(bevol_data[2])
 
 
 
