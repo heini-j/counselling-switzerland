@@ -15,7 +15,7 @@ print(mapdata)
 #plotting the map
 
 
-tmap_mode("plot")
+tmap_mode("view")
 
 #renaming the zipcode column to "PLZ" to match with the names in the shapefile
 
@@ -24,11 +24,6 @@ psychologist_df$PLZ <- psychologist_df$zipcode
 #creating a map that shows the number of psychologists in each zipcode
 
 psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
-
-#taking a log2 of the psyc_count variable to make the differences more visible
-
-psyc_log <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n()) %>% mutate(count = log2(count))
-
 
 #merging the zipcode_count dataframe with the mapdata dataframe
 
@@ -45,10 +40,10 @@ tm_shape(mapdata) +
               border.col = "grey",
               lwd = 0.1,
               palette = "BuPu", 
-              n = 3,
+              n = 6,
               style = "pretty",
               colorNA = "white") +
-  tm_layout(main.title = "N of psychologist in each zipcode",
+  tm_layout(main.title = "Log2 of number of psychologist in each zipcode",
             main.title.size = 0.8,
             bg.color = "grey85",
             legend.outside = TRUE,
@@ -64,6 +59,23 @@ popdata <- read.csv("populationPLZ.csv")
 View(popdata)
 
 #creating a variable that counts the number of psychologist relative to the population in each zipcoe
+
+mapdata <- merge(mapdata, popdata, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+
+tm_shape(mapdata) +
+  tm_polygons(col = "N", 
+              border.col = "grey",
+              lwd = 0.1,
+              palette = "BuPu", 
+              n = 6,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Population in each zipcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
+
 
 mapdata$pop_psyc <- popdata$N/mapdata$count
 

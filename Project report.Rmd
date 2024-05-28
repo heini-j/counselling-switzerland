@@ -25,6 +25,8 @@ Shapefiles for the map visualisations were downloaded from Kanton Luzerns Geodat
 
 The excel file for population in each postcode area in Switzerland was downloaded from the Swiss Federal Statistical Office: <https://www.bfs.admin.ch/asset/de/26565300>
 
+The relevant data (newest population data per postal code) was selected in excel and separated to a new file.
+
 The data corresponds to population data from 2022, which was deemed as adequate for the scope of this project.
 
 ## Project rundown
@@ -322,7 +324,7 @@ The following table was created:
             keyword count percentage 
 Children   Children   979   26.29600 
 Teenagers Teenagers  1543   41.44507 
-Adults       Adults  7856  211.01262 
+Adults       Adults  3598   96.64249
 Couples     Couples  1327   35.64330
 ```
 
