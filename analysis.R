@@ -1,4 +1,6 @@
 library(tidyverse)
+library(ggplot2)
+library(stringr)
 
 data <- read.csv("psychologist_combined.csv")
 
@@ -58,30 +60,34 @@ psychologist_df %>% group_by(availability) %>% summarise(count = n()/3723)
 #15,8 % are available in less than 2 weeks, 22,3 % in 2-4 weeks, 32,7 % at least four weeks, 29,2 % don't have any availability
 #for 60 % of the psychologist one has to wait at least 4 weeks
 
-#ggplot2#Turning the result in a table
+#creating a ggplot2 piechart of the availability of the psychologist
 
-billing_table <- psychologist_df %>% group_by(billing) %>% summarise(count = n()) %>% knitr::kable()
+availability_pie <- psychologist_df %>% 
+  group_by(availability) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = "Availability", y = count, fill = availability)) + 
+  geom_bar(stat = "identity") + coord_polar("y") + 
+  theme_void()
 
-billing_table
-
-install.packages("maps")
-library(maps)
-
-
-
-
-#creating a dataframe with the number of psychologists in each zipcode
-
-zipcode_count <- data %>% group_by(PLZ) %>% summarise(count = n())
-
-zipcode_count <- 
-
-#merging the zipcode_count dataframe with the mapdata dataframe
-
-mapdata$PLZ <- as.character(mapdata$PLZ)
+?ggplot
+availability_pie
 
 
-#creating a dataframe with the number of psychologists in each zipcode
+#counting the availability of psychological help for different groups
 
-zipcode_count <- data %>% group_by(PLZ) %>% summarise(count = n())
+keywords <- c("Children", "Teenagers", "Adults", "Couples")
 
+count_keyword <- function(keyword) {
+  str_detect(psychologist_df$groups, regex(paste0("\\b", keyword, "\\b"), ignore_case = TRUE))
+}
+
+# Apply the function to each keyword and sum the results
+keyword_counts <- sapply(keywords, function(keyword) sum(count_keyword(keyword)))
+
+keyword_percentages <- (keyword_counts / 3723) * 100
+
+# Convert to a data frame for better readability
+keyword_counts_df <- data.frame(keyword = keywords, count = keyword_counts, percentage = keyword_percentages)
+
+# Print the table
+print(keyword_counts_df)

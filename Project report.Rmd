@@ -17,9 +17,17 @@ Availability of appropriate healthcare is essential for healthy human life. Psyc
 
 In this project I utilise the information on counselling providers around Switzerland as provided by FSP's Psyfinder. The aim of the project is to map councelling providers in different area codes, while using several accessibility filters, such as inclusion in the basic insurance, target group of the service and so on. The aim of the project is to assess how equally available councelling services are in Switzerland.
 
-## Project timeline:
+## Project source material:
 
-The list of profile links were scraped on X. May. At this time the psyfinder website included the profiles of 3738 psychologists in Switzerland.
+The list of profile links were scraped on 8th of May 2024. At this time the psyfinder website included the profiles of 3738 psychologists in Switzerland.
+
+Shapefiles for the map visualisations were downloaded from Kanton Luzerns Geodata portal: <https://daten.geo.lu.ch/produkt/grzplzxx_ds_v1>
+
+The excel file for population in each postcode area in Switzerland was downloaded from the Swiss Federal Statistical Office: <https://www.bfs.admin.ch/asset/de/26565300>
+
+The relevant data (newest population data per postal code) was selected in excel and separated to a new file.
+
+The data corresponds to population data from 2022, which was deemed as adequate for the scope of this project.
 
 ## Project rundown
 
@@ -202,3 +210,126 @@ write.csv(psychologist_combined, "psychologist_combined.csv", row.names = FALSE)
 
 ## 2. Data analysis
 
+### 2.1. Data cleaning
+
+As the postcode is one of the most central variables in the analysis, it was necessary to check the quality of the data. The code below checks the number of missing/invalid values in the postcode variable.
+
+```{r}
+#find out all the unique values in the column zipcode
+
+zipcode_list <- unique(data$zipcode)
+
+#sorting the list
+
+zipcode_list <- sort(zipcode_list)
+
+zipcode_list
+
+#data includes zipcodes that are not valid, so we need to filter out the invalid zipcodes
+
+valid_zipcode <- zipcode_list[grepl("^\\d{4}$", zipcode_list)]
+
+print(valid_zipcode)
+
+#removing the profiles with invadid zipcodes from the data
+
+psychologist_df <- data %>% filter(zipcode %in% valid_zipcode)
+```
+
+After filtering 3723 profiles were left for further analysis.
+
+### 2.2. Desprictive statistics
+
+Which zipcodes have the most psychologists? This was assessed by counting the number of psychologists in each postcode area.
+
+```{r}
+zipcode_count <- psychologist_df %>% group_by(zipcode) %>% summarise(count = n()) %>% arrange(desc(count))
+
+zipcode_count
+
+#checking the count for larger areas and filtering by the first digit of the poistcode
+
+zipcode_count$first_digit <- substr(zipcode_count$zipcode, 1, 1)
+
+zipcode_count <- zipcode_count %>% group_by(first_digit) %>% summarise(count = sum(count)) %>% arrange(desc(count))
+
+zipcode_count
+```
+
+The zipcodes with the most psychologists are: 1003 with 141 psychologists, 3011 with 124 psychologists and 8006 with 99 psychologists
+
+Zipcodes starting with 1 have the highest number of psychologist (1208), then 8 / Zurich (946), 3/ Bern (418), 6/ Luzern (395)
+
+Coverance by basic insurance was also assessed.
+
+```{r}
+psychologist_df$billing <- as.factor(psychologist_df$billing)
+
+psychologist_df %>% group_by(billing) %>% summarise(count = n()/3723)
+```
+
+15 % don't have "covered by basic insurance" in their profile, whereas 85 % do. We land on the conclusion that the majority of psychologists in Switzerland are covered by basic insurance.
+
+What about the availabitlity of the psychologists?
+
+```{r}
+psychologist_df %>% group_by(availability) %>% summarise(count = n()/3723)
+```
+
+15,8 % are available in less than 2 weeks, 22,3 % in 2-4 weeks, 32,7 % at least four weeks, 29,2 % don't have any availability. For 60 % of the psychologist one has to wait at least 4 weeks
+
+Finally, a pie chart was created to visualise the availability of the psychologists.
+
+```{r}
+availability_pie <- psychologist_df %>% 
+  group_by(availability) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(x = "", y = count, fill = availability)) +
+  geom_bar(stat = "identity") +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  theme(legend.position = "bottom") +
+  labs(title = "Availability of psychologists in Switzerland")
+
+availability_pie
+
+```
+
+![](images/clipboard-3917257867.png)
+
+Lastly, the availability of psychological councelling for different groups was assessed. A sample of target groups was selected as these groups seem like the most common ones.
+
+```{r}
+keywords <- c("Children", "Teenagers", "Adults", "Couples")
+
+count_keyword <- function(keyword) {
+  str_detect(psychologist_df$groups, regex(paste0("\\b", keyword, "\\b"), ignore_case = TRUE))
+}
+
+# Apply the function to each keyword and sum the results
+keyword_counts <- sapply(keywords, function(keyword) sum(count_keyword(keyword)))
+
+keyword_percentages <- (keyword_counts / 3723) * 100
+
+# Convert to a data frame for better readability
+keyword_counts_df <- data.frame(keyword = keywords, count = keyword_counts, percentage = keyword_percentages)
+
+# Print the table
+print(keyword_counts_df)
+```
+
+The following table was created:
+
+```         
+            keyword count percentage 
+Children   Children   979   26.29600 
+Teenagers Teenagers  1543   41.44507 
+Adults       Adults  3598   96.64249
+Couples     Couples  1327   35.64330
+```
+
+As a conclusion, the majority of psychologists in Switzerland provide services for adults, while the availability of services for children, teenagers and couples is lower.
+
+### 2.3 Map visualisations
+
+## 3. Conclusions
