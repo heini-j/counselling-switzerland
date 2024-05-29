@@ -29,8 +29,6 @@ psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
 
 mapdata <- merge(mapdata, psyc_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
-mapdata <- merge(mapdata, psyc_log, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
-
 mapdata$log2_count <- log2(mapdata$count)
 
 #creating a map that shows the number of psychologists in each zipcode
@@ -38,7 +36,7 @@ mapdata$log2_count <- log2(mapdata$count)
 tm_shape(mapdata) +
   tm_polygons(col = "log2_count", 
               border.col = "grey",
-              lwd = 0.1,
+              lwd = 0.05,
               palette = "BuPu", 
               n = 6,
               style = "pretty",
