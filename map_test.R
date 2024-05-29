@@ -108,11 +108,51 @@ tmaptools::palette_explorer()
 
 unique(psychologist_df$availability)
 
+#assigning a numerical value to the availability variable
+
+availability_to_numeric <- function(availability) {
+  if (availability == "Less than two weeks") {
+    return(1)
+  } else if (availability == "Two to four weeks") {
+    return(2)
+  } else if (availability == "At least four weeks") {
+    return(3)
+  } else if (availability == "No date currently available") {
+    return(4)
+  } else {
+    return(NA)  # or another default value if needed
+  }
+}
+
+psychologist_df <- psychologist_df %>%
+  mutate(availability_numeric = sapply(availability, availability_to_numeric))
+
+View(psychologist_df$availability_numeric)
+
+#creating a map that shows the average availability of psychologists in each zipcode
+
+psyc_availability <- psychologist_df %>% group_by(PLZ) %>% summarise(availability_numeric = mean(availability_numeric, na.rm = TRUE))
+
+mapdata <- merge(mapdata, psyc_availability, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+
+mapdata <- mapdata %>%
+  mutate(availability_category = cut(availability_numeric,
+                                     breaks = c(-Inf, 1.5, 2.5, 3.5, Inf),
+                                     labels = c("Good availability", "Fairly good availability", "Low Availability", "No availability")))
+
+tm_shape(mapdata) +
+  tm_polygons(col = "availability_category", 
+              border.col = "grey",
+              lwd = 0.1,
+              palette = "BuPu", 
+              n = 4,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Availability of psychologists in each zipcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
 
 
-
-
-
-
-
-
+View(mapdata$availability_numeric)
