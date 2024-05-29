@@ -14,14 +14,13 @@ print(mapdata)
 
 #plotting the map
 
-
 tmap_mode("plot")
 
 #renaming the zipcode column to "PLZ" to match with the names in the shapefile
 
 psychologist_df$PLZ <- psychologist_df$zipcode
 
-#creating a map that shows the number of psychologists in each zipcode
+#creating a map that shows the number of psychologists in each zipcode. We use log2 to make the differences more visible
 
 psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
 
@@ -30,8 +29,6 @@ psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
 mapdata <- merge(mapdata, psyc_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
 mapdata$log2_count <- log2(mapdata$count)
-
-#creating a map that shows the number of psychologists in each zipcode
 
 tm_shape(mapdata) +
   tm_polygons(col = "log2_count", 
@@ -93,15 +90,6 @@ tm_shape(mapdata) +
             legend.position = c("right", "bottom"))
 
 
-?as.numeric
-?tm_layout
-
-?tm_shape
-
-?tm_polygons
-
-tmaptools::palette_explorer()
-
 #checking which values the availablity variable in psychologist_df takes
 
 unique(psychologist_df$availability)
@@ -153,4 +141,4 @@ tm_shape(mapdata) +
             legend.position = c("right", "bottom"))
 
 
-View(mapdata$availability_numeric)
+
