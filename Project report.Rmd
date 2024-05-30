@@ -15,17 +15,15 @@ Availability of appropriate healthcare services is essential for a fulfilling hu
 
 ## Aim of the project:
 
-In this project I utilise the information on counselling providers around Switzerland as provided by FSP's Psyfinder (https://www.psychologie.ch/en/psyfinder-map). The aim of the project is to to assess availability of counseling around Switzerland, including filtering for some basic features including the billing system. This project then contributes to the understanding health equality in Switzerland.
+In this project I utilise the information on counselling providers around Switzerland as provided by FSP's Psyfinder (<https://www.psychologie.ch/en/psyfinder-map>). The aim of the project is to to assess availability of counseling around Switzerland, including filtering for some basic features including the billing system. This project then contributes to the understanding health equality in Switzerland.
 
 ## Project source material:
 
-The list of profile links were scraped on 8th of May 2024. At this time the psyfinder website included the profiles of 3738 psychologists in Switzerland.
+The list of profile links from the psyfinder website were scraped on 8th of May 2024. At this time the profiles of 3738 psychologists in Switzerland were listed.
 
 Shapefiles for the map visualisations were downloaded from Kanton Luzerns Geodata portal: <https://daten.geo.lu.ch/produkt/grzplzxx_ds_v1>
 
-The excel file for population in each postcode area in Switzerland was downloaded from the Swiss Federal Statistical Office: <https://www.bfs.admin.ch/asset/de/26565300>
-
-The data corresponds to population data from 2022, which was deemed as adequate for the scope of this project.
+The excel file for population in each postcode area in Switzerland was downloaded from the Swiss Federal Statistical Office: <https://www.bfs.admin.ch/asset/de/26565300> . The data corresponds to population data from 2022, which was deemed as adequate for the scope of this project.
 
 ## Project rundown
 
@@ -33,9 +31,9 @@ The data corresponds to population data from 2022, which was deemed as adequate 
 
 ### 1.1. Initial preparations
 
-The project started by investigation of the website to be scraped (https://www.psychologie.ch/en/psyfinder-map). The website uses dynamic elements, i.e. infinite scrolling which made the scraping more difficult. After some research and trials, scrolling the page with a Selenium server powered external browser was as the most functional way to achieve the goal.
+The project started by investigation of the website to be scraped (<https://www.psychologie.ch/en/psyfinder-map>). The website uses dynamic elements, i.e. infinite scrolling which made the scraping more difficult. After some research and trials, scrolling the page with a Selenium server powered external browser was as the most functional way to achieve the goal.
 
-Further, to scroll to the end of the list of psychologists it was necessary to first open the the list of the website, i.e. asking selenium to click the right button. A selector gadget and inspecting the webpage was used. 
+Further, to scroll to the end of the list of psychologists it was necessary to first open the the list of the website, i.e. asking selenium to click the right button. A selector gadget and inspecting the webpage was used.
 
 ```{r}
 library(RSelenium)
@@ -119,7 +117,6 @@ To extract the information under titles "Address", "Target groups", "Languages",
 Finding a sufficient solution involved inspecting the Xpath notations. Finally, a solution where using the parent-child notation for returned the right results.
 
 The code below provides an test for fetching the address - replacing it with the other keywords returned the corresponding right information.
-
 
 ```{r}
 
@@ -369,8 +366,7 @@ language_counts_df <- language_counts_df[order(-language_counts_df$percentage), 
 print(language_counts_df)
 ```
 
-
-The following table shows the number of psychologists providing counseling in the selected languages and their percentage share of all psychologists. As expected, German, French, English, Swiss German and Italian are the most common languages for counseling. 
+The following table shows the number of psychologists providing counseling in the selected languages and their percentage share of all psychologists. As expected, German, French, English, Swiss German and Italian are the most common languages for counseling.
 
 ```         
               keyword count percentage 
@@ -390,7 +386,7 @@ Chinese       Chinese     0  0.0000000
 
 ### 2.3 Map visualisations
 
-The data was visualised on a map to assess whether different areas have equal access to psychological counseling. This involved finding the right geodata for Switzerland with the unit of the analysis: postcode areas. This data was found from City of Luzern's data portal and downloaded on the computer as a shapefile.
+The data was visualised on a map to assess whether different areas have equal access to psychological counseling. This involved finding the right geodata for Switzerland with the unit of the analysis: postcode areas. This data was found from City of Luzern's data portal and downloaded on the computer as a shapefile with the name "zipcodemap".
 
 ```{r}
 library(sf)
@@ -449,6 +445,7 @@ tm_shape(mapdata) +
 
 ![Image 2. Number of psychologist in each area code](images/map_psychPLZ.png)
 
+City areas seem to have a higher number of psychologists. This is also expected, as these areas have a higher population.
 
 2.  Population in each area code
 
@@ -484,9 +481,11 @@ tm_shape(mapdata) +
 
 ![Image 3. Population in each zipcode](images/map_popPLZ.png)
 
+Population seems to be distributed similarly as the psychologist, i.e. psychologists seem to be located where people live. Noteworthy is, however, that population is not spread as centralised as the psychologists. Additionally, Switzerland seems to have a lot of zipcodes with less than 5000 inhabitants. This is logical due to the mountainous geography.
+
 3.  Relative number of psychologists per population in each zipcode
 
-Using the population data and the data on number of psychologist was visualised on a separate map. This map shows the number of people, or potential clients, per psychologist in each zipcode.
+Is there an equal share of psychologist per population for each zipcode? Using the population data and the data on number of psychologist was visualised on a separate map. This map shows the number of people, or potential clients, per psychologist in each zipcode.
 
 ```{r}
 mapdata$pop_psyc <- mapdata$N/mapdata$count
@@ -509,6 +508,8 @@ tm_shape(mapdata) +
 ```
 
 ![Image 4. Population / psychologist share in each zipcode](images/map_psychpop.png)
+
+There seems to be less psychologists per capita in the German speaking Switzerland, compared to other areas in the country. Around cities the population per psychologist is higher as expected. In many neighbouring areas the situation is similar. This might mean that traveling a bit further might help, but in some cases this distance might be even longer.
 
 4.  Availability of counseling around Switzerland
 
@@ -568,5 +569,9 @@ tm_shape(mapdata) +
 ```
 
 ![Image 5. Availability of counseling around Switzerland](images/map_availability.png)
+
+There is a bit of variation in availability of counseling in Switzerland. Some areas are clearly highlighted as "no availability". Some of these areas seem to be low in both population and number of psychologist - thus, the availability reflects the availability of just few psychologists operating in the area. However, some of these areas seem also secluded, with no other central area nearby. Thus, there might be low number of psychologist with low availability in the area, and very long distance to the closest center with similar services.
+
+Around the Basel area availability seems very low, thus people might need to wait long times to find psychological help. The situation seems similar in the Luzern area. Availability around Zürich seems similar in the greater area, varying between fairly good and low availability. There might be a wait to get help, but usually one should be able to find a psychologist with availability. The situation is similar around the Lac Léman region. The italian speaking areas seem to have a balanced number of psychologist per population, with fairly good availability in most cases.
 
 ## 3. Conclusions
