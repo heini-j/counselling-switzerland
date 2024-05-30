@@ -44,7 +44,7 @@ test[[1]][1]
 zipcode <- str_extract(test, "\\d{4}")
 
 #turning links_profiles into a character vector
-psychologist_combined2 <- data.frame(Title = character(), stringsAsFactors = FALSE)
+psychologist_combined <- data.frame(Title = character(), stringsAsFactors = FALSE)
 
 #looping through all the profiles to extract the needed information
 
@@ -53,7 +53,7 @@ for (profile_link in links_profiles2) {
   i <- i + 1
   pages <- GET(
     profile_link,
-    add_headers(From = "heini.jaervioe@stud.unilu.ch", 'User-Agent' = R.Version()$version.string)
+    add_headers(From = "email", 'User-Agent' = R.Version()$version.string)
   )
   if (status_code(pages) == 200) {
     # Check if the request was successful
@@ -110,9 +110,9 @@ for (profile_link in links_profiles2) {
   
   psychologist_df <- data.frame(data)
   
-  psychologist_combined2 <- rbind.data.frame(psychologist_combined2, psychologist_df)
+  psychologist_combined <- rbind.data.frame(psychologist_combined, psychologist_df)
 }
 
 #Saving the dataframe as a csv file
 
-write.csv(psychologist_combined2, "psychologist2.csv", row.names = FALSE)
+write.csv(psychologist_combined, "psychologist_combined.csv", row.names = FALSE)
