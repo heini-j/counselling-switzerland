@@ -11,11 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-Availability of appropriate healthcare is essential for healthy human life. Psychiatric illnesses are currently one of the leading causes for absence from work, health related suffering and blabla. Fast access to appropriate treatment can prevent cronic illness and further complications. Since 2020, Switzerland has eased access to psychological counselling by including psychologists' interventions in basic insurance. The largest association for psychologists (FSP) in Switzerland provides information to the habitants and lists available services around the country.
+Availability of appropriate healthcare services is essential for a fulfilling human life. Psychiatric illnesses are currently one of the leading causes for absence from work, health related suffering and lower overall quality of life. Fast access to appropriate treatment can prevent further complications and psychiatric illnesses from becoming cronic. Since 2022, Switzerland has eased access to psychological counselling by including fixed-term psychologists' interventions in the basic insurance with the referral from a general practitioner. The largest association for psychologists (FSP) in Switzerland provides information about psychological services in the country and a tool for psychologist to promote their availability and for clients to search for counseling after their wishes.
 
 ## Aim of the project:
 
-In this project I utilise the information on counselling providers around Switzerland as provided by FSP's Psyfinder. The aim of the project is to map councelling providers in different area codes, while using several accessibility filters, such as inclusion in the basic insurance, target group of the service and so on. The aim of the project is to assess how equally available councelling services are in Switzerland.
+In this project I utilise the information on counselling providers around Switzerland as provided by FSP's Psyfinder (https://www.psychologie.ch/en/psyfinder-map). The aim of the project is to to assess availability of counseling around Switzerland, including filtering for some basic features including the billing system. This project then contributes to the understanding health equality in Switzerland.
 
 ## Project source material:
 
@@ -25,8 +25,6 @@ Shapefiles for the map visualisations were downloaded from Kanton Luzerns Geodat
 
 The excel file for population in each postcode area in Switzerland was downloaded from the Swiss Federal Statistical Office: <https://www.bfs.admin.ch/asset/de/26565300>
 
-The relevant data (newest population data per postal code) was selected in excel and separated to a new file.
-
 The data corresponds to population data from 2022, which was deemed as adequate for the scope of this project.
 
 ## Project rundown
@@ -35,9 +33,11 @@ The data corresponds to population data from 2022, which was deemed as adequate 
 
 ### 1.1. Initial preparations
 
-The project started by investigation of the website to be scraped (psyfinder.ch). As the website included dynamic elements, i.e. infinite scrolling, it was necessary to first access the page with Selenium powered external browser that was used to scroll to the end of the list.
+The project started by investigation of the website to be scraped (https://www.psychologie.ch/en/psyfinder-map). The website uses dynamic elements, i.e. infinite scrolling which made the scraping more difficult. After some research and trials, scrolling the page with a Selenium server powered external browser was as the most functional way to achieve the goal.
 
-```{r cars}
+Further, to scroll to the end of the list of psychologists it was necessary to first open the the list of the website, i.e. asking selenium to click the right button. A selector gadget and inspecting the webpage was used. 
+
+```{r}
 library(RSelenium)
 library(wdman)
 
@@ -46,10 +46,9 @@ rd <- rsDriver(browser = "firefox",
 
 driver <- rd$client
 
-#setting the window size as phone adapted website is easier to manage
+#setting the window size, since phone adapted website is easier to manage
 
 driver$setWindowSize(360, 640)
-
 
 #navigating to the website with the selenium driver
 driver$navigate('https://www.psychologie.ch/en/psyfinder-map')
@@ -76,7 +75,7 @@ for(i in 1:50){
 
 ```
 
-This result was saved in an HTML file in order to scrape the eventual profile links
+When the website was scrolled all the way to the bottom the result was saved in an HTML file in order to scrape the eventual profile links without the need to scroll the page again.
 
 ```{r}
 html <- driver$getPageSource()[[1]]
@@ -86,7 +85,7 @@ writeLines(html, "psyfinder.html")
 
 ### 1.2 Scraping the profile links
 
-To scrape the needed information from the counsellor profiles on the psyfinder-website it was necessary to create a list of profile links to be used in the scraping process.
+To scrape the needed information from the counselor profiles on the psyfinder-website it was necessary to create a list of profile links to be used in the scraping process. A selector gadget and inspecting the webpage was used to find the right node.
 
 ```{r}
 library(rvest)
@@ -115,23 +114,23 @@ The list links_profiles includes only the profile links (n = 3738).
 
 To scrape the right information from the profile, an example code was created.
 
-To extract the information under titles "Address", "Target groups", "Languages", "Availability" and "Billing", it was necessary to find the correct Xpath node to access this information. This process included several trials where using the parent notation returned the right results.
+To extract the information under titles "Address", "Target groups", "Languages", "Availability" and "Billing", it was necessary to find the correct Xpath node to access this information. This process included several trials. At first, a test was conducted on the first profile. I found the right node with selector gadget then identified the needed information in the numbered element. This produced the needed information for the first node. However, during a test scraping attempt it turned out the due to the different structure of each profile (e.g. some included more information than others) the same code would not work for all profiles. Sometimes the right information was not returned at all, sometimes it was found in the wrong element.
 
-The code below provides an example for fetching the address - replacing it with the other keywords returned the corresponding right information.
+Finding a sufficient solution involved inspecting the Xpath notations. Finally, a solution where using the parent-child notation for returned the right results.
 
-Additionally, new variable "post code" was formed for the analysis.
+The code below provides an test for fetching the address - replacing it with the other keywords returned the corresponding right information.
+
 
 ```{r}
 
 #reading the needed information from the first profile in the html file
 
 test <- read_html(links_profiles[1]) %\>% html_elements(xpath = '//h3[.="Address"]/parent::div') %\>% html_text2() %\>% str_replace("Address\n", "") %\>% str_replace_all("\n", " ")
-
-# Extract the zipcode of 4 digits from the address string
-zipcode <- str_extract(test, "\\d{4}")
 ```
 
 Finally, this information was scraped from all the profiles to form a dataset for later analysis.
+
+Additionally, new variable "postcode" was formed for the analysis.
 
 ```{r}
 #turning links_profiles into a character vector
@@ -142,7 +141,7 @@ for (profile_link in links_profiles) {
   i <- i + 1
   pages <- GET(
     profile_link,
-    add_headers(From = "heini.jaervioe@stud.unilu.ch", 'User-Agent' = R.Version()$version.string)
+    add_headers(From = "email", 'User-Agent' = R.Version()$version.string)
   )
   if (status_code(pages) == 200) {
     # Check if the request was successful
@@ -182,7 +181,7 @@ for (profile_link in links_profiles) {
     str_replace("Address\n", "") %>%
     str_replace_all("\n", " ")
   
-  zipcode <- str_extract(addr, "\\d{4}")
+  zipcode <- str_extract(addr, "\\d{4}") #extracting the zipcode
 
   
   data <- list(
@@ -215,6 +214,10 @@ write.csv(psychologist_combined, "psychologist_combined.csv", row.names = FALSE)
 As the postcode is one of the most central variables in the analysis, it was necessary to check the quality of the data. The code below checks the number of missing/invalid values in the postcode variable.
 
 ```{r}
+library(tidyverse)
+library(ggplot2)
+library(stringr)
+
 #find out all the unique values in the column zipcode
 
 zipcode_list <- unique(data$zipcode)
@@ -225,7 +228,7 @@ zipcode_list <- sort(zipcode_list)
 
 zipcode_list
 
-#data includes zipcodes that are not valid, so we need to filter out the invalid zipcodes
+#data includes zipcodes that are not valid (e.g. only one number for a postcode), so we need to filter out the invalid zipcodes
 
 valid_zipcode <- zipcode_list[grepl("^\\d{4}$", zipcode_list)]
 
@@ -238,16 +241,16 @@ psychologist_df <- data %>% filter(zipcode %in% valid_zipcode)
 
 After filtering 3723 profiles were left for further analysis.
 
-### 2.2. Desprictive statistics
+### 2.2. Descriptive statistics
 
-Which zipcodes have the most psychologists? This was assessed by counting the number of psychologists in each postcode area.
+Which zipcodes have the most psychologists? This was assessed by counting the number of psychologists in zipcodes separately and by the first digit of the zipcode.
 
 ```{r}
 zipcode_count <- psychologist_df %>% group_by(zipcode) %>% summarise(count = n()) %>% arrange(desc(count))
 
 zipcode_count
 
-#checking the count for larger areas and filtering by the first digit of the poistcode
+#checking the count for larger areas and filtering by the first digit of the postcode
 
 zipcode_count$first_digit <- substr(zipcode_count$zipcode, 1, 1)
 
@@ -258,7 +261,7 @@ zipcode_count
 
 The zipcodes with the most psychologists are: 1003 with 141 psychologists, 3011 with 124 psychologists and 8006 with 99 psychologists
 
-Zipcodes starting with 1 have the highest number of psychologist (1208), then 8 / Zurich (946), 3/ Bern (418), 6/ Luzern (395)
+Zipcodes starting with 1 (Vaud and Wallis) have the highest number of psychologist (1208), then 8 / Zurich (946), 3/ Bern (418), 6/ Luzern (395)
 
 Coverance by basic insurance was also assessed.
 
@@ -268,17 +271,17 @@ psychologist_df$billing <- as.factor(psychologist_df$billing)
 psychologist_df %>% group_by(billing) %>% summarise(count = n()/3723)
 ```
 
-15 % don't have "covered by basic insurance" in their profile, whereas 85 % do. We land on the conclusion that the majority of psychologists in Switzerland are covered by basic insurance.
+Some psychologist report several options for billing. Those who don't mention "covered by basic insurance" account for 15 % of the psychologist. 85 % do have this text on their profile. We land on the conclusion that the majority of psychologists in Switzerland are covered by basic insurance.
 
-What about the availabitlity of the psychologists?
+What about the availability of the psychologists?
 
 ```{r}
 psychologist_df %>% group_by(availability) %>% summarise(count = n()/3723)
 ```
 
-15,8 % are available in less than 2 weeks, 22,3 % in 2-4 weeks, 32,7 % at least four weeks, 29,2 % don't have any availability. For 60 % of the psychologist one has to wait at least 4 weeks
+15,8 % are available in less than 2 weeks, 22,3 % in 2-4 weeks, 32,7 % at least four weeks, 29,2 % don't have any availability. In conclusion, 60 % of the psychologist one has to wait at least 4 weeks
 
-Finally, a pie chart was created to visualise the availability of the psychologists.
+A pie chart was created to visualise the availability of the psychologists.
 
 ```{r}
 availability_pie <- psychologist_df %>% 
@@ -297,7 +300,7 @@ availability_pie
 
 ![Image 1. Availability of all psychologist](images/clipboard-3917257867.png){width="350"}
 
-Lastly, the availability of psychological councelling for different groups was assessed. A sample of target groups was selected as these groups seem like the most common ones.
+Next, the availability of psychological counselling for different groups was assessed. A sample of target groups was selected as these groups seem like the most common ones. As the profiles usually mention several groups, we had to use a regular expression combined with detection to find the right count. Additionally, as "adults" were sometimes mentioned two times (Adults and young adults were separed groups), the code was adjusted to count only the first mention of the keyword.
 
 ```{r}
 keywords <- c("Children", "Teenagers", "Adults", "Couples")
@@ -330,7 +333,7 @@ Couples     Couples  1327   35.64330
 
 The majority of psychologists in Switzerland provide services for adults, while the availability of services for children, teenagers and couples is lower.
 
-Finally, the availability of counseling in different languages was analysed. A selection of some common languages were picked and their frequency in the data analysed.
+Finally, the availability of counseling in different languages was analysed. A selection of some common languages were picked and their frequency in the data analysed. "Swiss" stands for Swiss German to avoid counting German twice.
 
 ```{r}
 print(psychologist_df$languages)
@@ -354,6 +357,7 @@ count_language <- function(language) {
 language_counts <- sapply(languages, function(language) sum(count_language(language)))
 
 print(language_counts)
+
 language_percentages <- (language_counts / 3723) * 100
 
 language_counts_df <- data.frame(keyword = languages, count = language_counts, percentage = language_percentages)
@@ -366,7 +370,7 @@ print(language_counts_df)
 ```
 
 
-The following table shows the number of psychologists providing counseling in the selected languages and their percentage share of all psychologists.
+The following table shows the number of psychologists providing counseling in the selected languages and their percentage share of all psychologists. As expected, German, French, English, Swiss German and Italian are the most common languages for counseling. 
 
 ```         
               keyword count percentage 
@@ -386,7 +390,7 @@ Chinese       Chinese     0  0.0000000
 
 ### 2.3 Map visualisations
 
-The data was visualised on a map to assess whether different areas have equal access to psychological counseling.
+The data was visualised on a map to assess whether different areas have equal access to psychological counseling. This involved finding the right geodata for Switzerland with the unit of the analysis: postcode areas. This data was found from City of Luzern's data portal and downloaded on the computer as a shapefile.
 
 ```{r}
 library(sf)
@@ -412,16 +416,16 @@ tmap_mode("plot")
 psychologist_df$PLZ <- psychologist_df$zipcode
 ```
 
-Four maps were created as follows:
+Four maps were created. This process involved creating a summary variable of the wanted information and merging it with the mapdata dataframe.
 
 1.  Number of psychologists in each area code
 
 ```{r}
-#creating a map that shows the number of psychologists in each zipcode. We use log2 to make the differences more visible
+#creating a map that shows the number of psychologists in each zipcode. 
 
 psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
 
-#merging the zipcode_count dataframe with the mapdata dataframe
+#Merging the zipcode_count dataframe with the mapdata dataframe. We use log2 to make the differences more visible.
 
 mapdata <- merge(mapdata, psyc_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
@@ -445,7 +449,12 @@ tm_shape(mapdata) +
 
 ![Image 2. Number of psychologist in each area code](images/map_psychPLZ.png)
 
+
 2.  Population in each area code
+
+It is important to understand how the population is spread between the zipcodes to assess the possible need for counseling. Thus, the population data per zipcode was downloaded from the Swiss Federal Statistical Office. This excel file included sheets of population data for multiple years and for multiple groups (e.g. share of different age groups in the population). To speed up the process the right data was selected in excel and saved to csv-file.
+
+This file was then read to R and merged with the mapdata dataframe.
 
 ```{r}
 popdata <- read.csv("populationPLZ.csv")
@@ -477,6 +486,8 @@ tm_shape(mapdata) +
 
 3.  Relative number of psychologists per population in each zipcode
 
+Using the population data and the data on number of psychologist was visualised on a separate map. This map shows the number of people, or potential clients, per psychologist in each zipcode.
+
 ```{r}
 mapdata$pop_psyc <- mapdata$N/mapdata$count
 
@@ -501,8 +512,10 @@ tm_shape(mapdata) +
 
 4.  Availability of counseling around Switzerland
 
+Are counseling services as readily available in all areas of Switzerland? This was assessed by creating a map that shows the average availability of psychologists in each zipcode. The availability variable was first transformed into a numerical variable to make average availability count possible. A range was then created to show the availability in four categories: good availability, fairly good availability, low availability and no availability.
+
 ```{r}
-#checking which values the availablity variable in psychologist_df takes
+#checking which values the availability variable in psychologist_df takes
 
 unique(psychologist_df$availability)
 
