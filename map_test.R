@@ -14,14 +14,13 @@ print(mapdata)
 
 #plotting the map
 
-
-tmap_mode("view")
+tmap_mode("plot")
 
 #renaming the zipcode column to "PLZ" to match with the names in the shapefile
 
 psychologist_df$PLZ <- psychologist_df$zipcode
 
-#creating a map that shows the number of psychologists in each zipcode
+#creating a map that shows the number of psychologists in each zipcode. We use log2 to make the differences more visible
 
 psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
 
@@ -29,16 +28,12 @@ psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
 
 mapdata <- merge(mapdata, psyc_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
-mapdata <- merge(mapdata, psyc_log, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
-
 mapdata$log2_count <- log2(mapdata$count)
-
-#creating a map that shows the number of psychologists in each zipcode
 
 tm_shape(mapdata) +
   tm_polygons(col = "log2_count", 
               border.col = "grey",
-              lwd = 0.1,
+              lwd = 0.05,
               palette = "BuPu", 
               n = 6,
               style = "pretty",
@@ -58,7 +53,7 @@ popdata <- read.csv("populationPLZ.csv")
 
 View(popdata)
 
-#creating a variable that counts the number of psychologist relative to the population in each zipcoe
+#ccreating a map that shows the population in each zipcode to visually compare with the number of psychologists
 
 mapdata <- merge(mapdata, popdata, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
@@ -76,52 +71,74 @@ tm_shape(mapdata) +
             legend.outside = TRUE,
             legend.position = c("right", "bottom"))
 
+#creating a map that shows the relative number of psychologist per population in each zipcode
 
-mapdata$pop_psyc <- popdata$N/mapdata$count
-
+mapdata$pop_psyc <- mapdata$N/mapdata$count
 
 tm_shape(mapdata) +
   tm_polygons(col = "pop_psyc", 
               border.col = "grey",
               lwd = 0.1,
               palette = "BuPu", 
-              n = 3,
+              n = 6,
               style = "pretty",
               colorNA = "white") +
-  tm_layout(main.title = "Relative number of psychologist in each zipcode",
+  tm_layout(main.title = "Population / psychologist in each postcode",
             main.title.size = 0.8,
             bg.color = "grey85",
             legend.outside = TRUE,
             legend.position = c("right", "bottom"))
 
 
-?as.numeric
-?tm_layout
+#checking which values the availablity variable in psychologist_df takes
 
-?tm_shape
+unique(psychologist_df$availability)
 
-?tm_polygons
+#assigning a numerical value to the availability variable
 
-tmaptools::palette_explorer()
+availability_to_numeric <- function(availability) {
+  if (availability == "Less than two weeks") {
+    return(1)
+  } else if (availability == "Two to four weeks") {
+    return(2)
+  } else if (availability == "At least four weeks") {
+    return(3)
+  } else if (availability == "No date currently available") {
+    return(4)
+  } else {
+    return(NA)  # or another default value if needed
+  }
+}
 
-#creating a map that shows the variation in the "availability" variable in each zipcode
+psychologist_df <- psychologist_df %>%
+  mutate(availability_numeric = sapply(availability, availability_to_numeric))
 
-availability_count <- data %>% group_by(PLZ, availability) %>% summarise(count = n())
+View(psychologist_df$availability_numeric)
 
-#merging the availability_count dataframe with the mapdata dataframe
+#creating a map that shows the average availability of psychologists in each zipcode
 
-mapdata <- merge(mapdata, availability_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+psyc_availability <- psychologist_df %>% group_by(PLZ) %>% summarise(availability_numeric = mean(availability_numeric, na.rm = TRUE))
 
+mapdata <- merge(mapdata, psyc_availability, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
 
+mapdata <- mapdata %>%
+  mutate(availability_category = cut(availability_numeric,
+                                     breaks = c(-Inf, 1.5, 2.5, 3.5, Inf),
+                                     labels = c("Good availability", "Fairly good availability", "Low Availability", "No availability")))
 
-#reading an excel file to R
-
-bevol_data <- readxl::read_excel("bevolkerung.xlsx")
-
-View(bevol_data[2])
-
-
-
+tm_shape(mapdata) +
+  tm_polygons(col = "availability_category", 
+              border.col = "grey",
+              lwd = 0.1,
+              palette = "BuPu", 
+              n = 4,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Availability of psychologists in each zipcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
 
 
 
