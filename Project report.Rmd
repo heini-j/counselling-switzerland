@@ -328,7 +328,7 @@ Adults       Adults  3598   96.64249
 Couples     Couples  1327   35.64330
 ```
 
-The majority of psychologists in Switzerland provide services for adults, while the availability of services for children, teenagers and couples is lower.
+The majority of psychologists in Switzerland provide services for adults, while the availability of services for children, teenagers and couples is lower. Children and youth might enjoy similar services through e.g. schools, which might explain the relatively low number of psychologist focusing on these target groups.
 
 Finally, the availability of counseling in different languages was analysed. A selection of some common languages were picked and their frequency in the data analysed. "Swiss" stands for Swiss German to avoid counting German twice.
 
@@ -387,6 +387,8 @@ Chinese       Chinese     0  0.0000000
 ### 2.3 Map visualisations
 
 The data was visualised on a map to assess whether different areas have equal access to psychological counseling. This involved finding the right geodata for Switzerland with the unit of the analysis: postcode areas. This data was found from City of Luzern's data portal and downloaded on the computer as a shapefile with the name "zipcodemap".
+
+An original aim was to explore the possibility of making an interactive map that would. This would've allowed the user to look at the map more thoroughly and presenting the next visualisations in one map. Due to time and other resource limitations this was not possible. Thus, unfortunately the maps here don't provide data on spesific locations or values.
 
 ```{r}
 library(sf)
@@ -575,3 +577,7 @@ There is a bit of variation in availability of counseling in Switzerland. Some a
 Around the Basel area availability seems very low, thus people might need to wait long times to find psychological help. The situation seems similar in the Luzern area. Availability around Zürich seems similar in the greater area, varying between fairly good and low availability. There might be a wait to get help, but usually one should be able to find a psychologist with availability. The situation is similar around the Lac Léman region. The italian speaking areas seem to have a balanced number of psychologist per population, with fairly good availability in most cases.
 
 ## 3. Conclusions
+
+The aim of this project was to scrape information of counseling services in Switzerland through the FSP's Psyfinder. The project turned out to be more complex than thought at first glance, and involved gettimg familiar with Selenium server, Xpath and geodata. This project report provides the rundown of the necessary steps as well as examples of analysis options on the data.
+
+As a conclusion, Switzerland seems like a country where both population and counseling services are quite centered in cities or larger towns. Although with some queuing time, in most areas there seem to be availability of psychologist services. The examples here leave a lot for discovery. Mapping e.g. hospitals might expand the understanding of psychiatric help in Switzerland.
