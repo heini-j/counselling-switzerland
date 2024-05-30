@@ -69,9 +69,7 @@ availability_pie <- psychologist_df %>%
   geom_bar(stat = "identity") + coord_polar("y") + 
   theme_void()
 
-?ggplot
 availability_pie
-
 
 #counting the availability of psychological help for different groups
 
@@ -91,3 +89,40 @@ keyword_counts_df <- data.frame(keyword = keywords, count = keyword_counts, perc
 
 # Print the table
 print(keyword_counts_df)
+
+#checking the availability of counseling in different languages
+
+print(psychologist_df$languages)
+
+if (any(is.na(psychologist_df$languages))) {
+  stop("There are NA values in the languages column.")
+}
+
+#There are NA values in the languages so we need to adjust the code slightly
+
+languages <- c("English", "German", "French", "Italian", "Swiss", "Portuguese", "Russian", "Arabic", "Turkish", "Chinese", "Serbian", "Spanish")
+
+count_language <- function(language) {
+  detected <- str_detect(coalesce(psychologist_df$languages, ""), regex(paste0("\\b", language, "\\b"), ignore_case = TRUE))
+  print(paste("Language:", language))
+  print(detected)
+  return(detected)
+}
+
+# Apply the function to each keyword and sum the results
+language_counts <- sapply(languages, function(language) sum(count_language(language)))
+
+print(language_counts)
+language_percentages <- (language_counts / 3723) * 100
+
+language_counts_df <- data.frame(keyword = languages, count = language_counts, percentage = language_percentages)
+
+# Print the table and organise the results by highest percentage first
+
+language_counts_df <- language_counts_df[order(-language_counts_df$percentage), ]
+print(language_counts_df)
+
+
+
+
+

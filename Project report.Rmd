@@ -295,7 +295,7 @@ availability_pie
 
 ```
 
-![](images/clipboard-3917257867.png)
+![Image 1. Availability of all psychologist](images/clipboard-3917257867.png){width="350"}
 
 Lastly, the availability of psychological councelling for different groups was assessed. A sample of target groups was selected as these groups seem like the most common ones.
 
@@ -328,8 +328,232 @@ Adults       Adults  3598   96.64249
 Couples     Couples  1327   35.64330
 ```
 
-As a conclusion, the majority of psychologists in Switzerland provide services for adults, while the availability of services for children, teenagers and couples is lower.
+The majority of psychologists in Switzerland provide services for adults, while the availability of services for children, teenagers and couples is lower.
+
+Finally, the availability of counseling in different languages was analysed. A selection of some common languages were picked and their frequency in the data analysed.
+
+```{r}
+print(psychologist_df$languages)
+
+if (any(is.na(psychologist_df$languages))) {
+  stop("There are NA values in the languages column.")
+}
+
+#There are NA values in the languages so we need to adjust the code slightly
+
+languages <- c("English", "German", "French", "Italian", "Swiss", "Portuguese", "Russian", "Arabic", "Turkish", "Chinese", "Serbian", "Spanish")
+
+count_language <- function(language) {
+  detected <- str_detect(coalesce(psychologist_df$languages, ""), regex(paste0("\\b", language, "\\b"), ignore_case = TRUE))
+  print(paste("Language:", language))
+  print(detected)
+  return(detected)
+}
+
+# Apply the function to each keyword and sum the results
+language_counts <- sapply(languages, function(language) sum(count_language(language)))
+
+print(language_counts)
+language_percentages <- (language_counts / 3723) * 100
+
+language_counts_df <- data.frame(keyword = languages, count = language_counts, percentage = language_percentages)
+
+# Print the table and organise the results by highest percentage first
+
+language_counts_df <- language_counts_df[order(-language_counts_df$percentage), ]
+
+print(language_counts_df)
+```
+
+
+The following table shows the number of psychologists providing counseling in the selected languages and their percentage share of all psychologists.
+
+```         
+              keyword count percentage 
+German         German  2180 58.5549288 
+French         French  1735 46.6022025 
+English       English  1558 41.8479721 
+Swiss           Swiss  1216 32.6618319 
+Italian       Italian   545 14.6387322 
+Spanish       Spanish   284  7.6282568 
+Portuguese Portuguese   112  3.0083266 
+Russian       Russian    30  0.8058018 
+Turkish       Turkish    25  0.6715015 
+Serbian       Serbian    24  0.6446414 
+Arabic         Arabic    19  0.5103411 
+Chinese       Chinese     0  0.0000000
+```
 
 ### 2.3 Map visualisations
+
+The data was visualised on a map to assess whether different areas have equal access to psychological counseling.
+
+```{r}
+library(sf)
+library(leaflet)
+library(tmap)
+library(dplyr)
+library(shinyjs)
+
+#reading the shp file for a map of switzerland with zipcode areas to R
+
+mapdata <- sf::st_read("zipcodemap.shp")
+
+#checking that the data was read correctly
+
+print(mapdata)
+
+#plotting the map
+
+tmap_mode("plot")
+
+#renaming the zipcode column to "PLZ" to match with the names in the shapefile
+
+psychologist_df$PLZ <- psychologist_df$zipcode
+```
+
+Four maps were created as follows:
+
+1.  Number of psychologists in each area code
+
+```{r}
+#creating a map that shows the number of psychologists in each zipcode. We use log2 to make the differences more visible
+
+psyc_count <- psychologist_df %>% group_by(PLZ) %>% summarise(count = n())
+
+#merging the zipcode_count dataframe with the mapdata dataframe
+
+mapdata <- merge(mapdata, psyc_count, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+
+mapdata$log2_count <- log2(mapdata$count)
+
+tm_shape(mapdata) +
+  tm_polygons(col = "log2_count", 
+              border.col = "grey",
+              lwd = 0.05,
+              palette = "BuPu", 
+              n = 6,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Log2 of number of psychologist in each zipcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
+
+```
+
+![Image 2. Number of psychologist in each area code](images/map_psychPLZ.png)
+
+2.  Population in each area code
+
+```{r}
+popdata <- read.csv("populationPLZ.csv")
+
+#selecting columns of interest
+
+View(popdata)
+
+#ccreating a map that shows the population in each zipcode to visually compare with the number of psychologists
+
+mapdata <- merge(mapdata, popdata, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+
+tm_shape(mapdata) +
+  tm_polygons(col = "N", 
+              border.col = "grey",
+              lwd = 0.1,
+              palette = "BuPu", 
+              n = 6,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Population in each zipcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
+```
+
+![Image 3. Population in each zipcode](images/map_popPLZ.png)
+
+3.  Relative number of psychologists per population in each zipcode
+
+```{r}
+mapdata$pop_psyc <- mapdata$N/mapdata$count
+
+tm_shape(mapdata) +
+  tm_polygons(col = "pop_psyc", 
+              border.col = "grey",
+              lwd = 0.1,
+              palette = "BuPu", 
+              n = 6,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Population / psychologist in each postcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
+
+
+```
+
+![Image 4. Population / psychologist share in each zipcode](images/map_psychpop.png)
+
+4.  Availability of counseling around Switzerland
+
+```{r}
+#checking which values the availablity variable in psychologist_df takes
+
+unique(psychologist_df$availability)
+
+#assigning a numerical value to the availability variable
+
+availability_to_numeric <- function(availability) {
+  if (availability == "Less than two weeks") {
+    return(1)
+  } else if (availability == "Two to four weeks") {
+    return(2)
+  } else if (availability == "At least four weeks") {
+    return(3)
+  } else if (availability == "No date currently available") {
+    return(4)
+  } else {
+    return(NA)  # or another default value if needed
+  }
+}
+
+psychologist_df <- psychologist_df %>%
+  mutate(availability_numeric = sapply(availability, availability_to_numeric))
+
+View(psychologist_df$availability_numeric)
+
+#creating a map that shows the average availability of psychologists in each zipcode
+
+psyc_availability <- psychologist_df %>% group_by(PLZ) %>% summarise(availability_numeric = mean(availability_numeric, na.rm = TRUE))
+
+mapdata <- merge(mapdata, psyc_availability, by.x = "PLZ", by.y = "PLZ", all.x = TRUE)
+
+mapdata <- mapdata %>%
+  mutate(availability_category = cut(availability_numeric,
+                                     breaks = c(-Inf, 1.5, 2.5, 3.5, Inf),
+                                     labels = c("Good availability", "Fairly good availability", "Low Availability", "No availability")))
+
+tm_shape(mapdata) +
+  tm_polygons(col = "availability_category", 
+              border.col = "grey",
+              lwd = 0.1,
+              palette = "BuPu", 
+              n = 4,
+              style = "pretty",
+              colorNA = "white") +
+  tm_layout(main.title = "Availability of psychologists in each zipcode",
+            main.title.size = 0.8,
+            bg.color = "grey85",
+            legend.outside = TRUE,
+            legend.position = c("right", "bottom"))
+
+```
+
+![Image 5. Availability of counseling around Switzerland](images/map_availability.png)
 
 ## 3. Conclusions
